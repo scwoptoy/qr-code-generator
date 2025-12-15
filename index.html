@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            margin: 0 0 30px 0;
+            color: #1a1a2e;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4a90d9;
+            box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4a90d9 0%, #3672b9 100%);
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 15px rgba(74, 144, 217, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #qrcode-container {
+            margin: 30px 0;
+            text-align: center;
+            min-height: 50px;
+        }
+
+        #qrcode {
+            display: inline-block;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        #qrcode img {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .instructions {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .size-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .size-selector input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .size-selector input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4a90d9;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .size-value {
+            min-width: 60px;
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔳 QR Code Generator</h1>
+        
+        <div class="form-group">
+            <label for="url-input">URL or Text</label>
+            <input type="text" id="url-input" placeholder="https://example.com" autofocus>
+        </div>
+
+        <div class="form-group">
+            <label for="filename-input">Filename</label>
+            <input type="text" id="filename-input" placeholder="my-qrcode" value="qrcode">
+        </div>
+
+        <div class="form-group">
+            <label>QR Code Size</label>
+            <div class="size-selector">
+                <input type="range" id="size-slider" min="128" max="512" value="256" step="32">
+                <span class="size-value" id="size-display">256px</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="generate-btn">Generate QR Code</button>
+        
+        <div id="qrcode-container">
+            <div id="qrcode" class="hidden"></div>
+        </div>
+
+        <button class="btn btn-secondary hidden" id="download-btn">Download PNG</button>
+
+        <p class="instructions">Enter a URL or text, then click Generate to create your QR code.</p>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById('url-input');
+        const filenameInput = document.getElementById('filename-input');
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeDisplay = document.getElementById('size-display');
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const qrcodeContainer = document.getElementById('qrcode');
+        
+        let qrcode = null;
+
+        // Update size display
+        sizeSlider.addEventListener('input', () => {
+            sizeDisplay.textContent = `${sizeSlider.value}px`;
+        });
+
+        // Generate QR code
+        generateBtn.addEventListener('click', generateQRCode);
+        
+        // Also generate on Enter key
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') generateQRCode();
+        });
+
+        function generateQRCode() {
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Please enter a URL or text');
+                urlInput.focus();
+                return;
+            }
+
+            const size = parseInt(sizeSlider.value);
+
+            // Clear previous QR code
+            qrcodeContainer.innerHTML = '';
+            qrcodeContainer.classList.remove('hidden');
+
+            // Generate new QR code
+            qrcode = new QRCode(qrcodeContainer, {
+                text: url,
+                width: size,
+                height: size,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Show download button
+            downloadBtn.classList.remove('hidden');
+        }
+
+        // Download QR code
+        downloadBtn.addEventListener('click', () => {
+            const canvas = qrcodeContainer.querySelector('canvas');
+            if (!canvas) {
+                // Fallback to img if canvas not available
+                const img = qrcodeContainer.querySelector('img');
+                if (img) {
+                    downloadImage(img.src);
+                }
+                return;
+            }
+
+            const dataURL = canvas.toDataURL('image/png');
+            downloadImage(dataURL);
+        });
+
+        function downloadImage(dataURL) {
+            let filename = filenameInput.value.trim() || 'qrcode';
+            if (!filename.endsWith('.png')) {
+                filename += '.png';
+            }
+
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataURL;
+            link.click();
+        }
+    </script>
+</body>
+</html>
